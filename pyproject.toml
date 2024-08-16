@@ -10,6 +10,8 @@ packages = [{include = "knowledge_gap"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 chromadb = "^0.5"
+networkx = "^3.3"
+pyvis = "^0.3.2"
 
 [build-system]
 requires = ["poetry-core"]

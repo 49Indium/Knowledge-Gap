@@ -1,1 +1,4 @@
 poetry.lock
+data/*
+lib/*
+demo.html
