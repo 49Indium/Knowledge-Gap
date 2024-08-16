@@ -2,6 +2,8 @@ from pyvis.network import Network
 import networkx as nx
 import chromadb
 import csv
+import itertools
+from math import dist
 
 def read_mathematical_definition_notes(filepath="data/MathsDefinitionNotes.txt"):
     with open(filepath, newline="") as notefile:
@@ -42,6 +44,9 @@ def add_mathematical_definition_notes_to_db(db, notes):
         metadatas = notes,
         ids = [note["id"] for note in notes]
     )
+
+def l2_distance(v1, v2):
+    return dist(v1, v2)
             
 chroma_client = chromadb.PersistentClient(path="/data/chromadb")
 
@@ -59,16 +64,21 @@ results = flashcards_db.query(
 )
 print(f"Results {results}")
 
-nx_graph = nx.cycle_graph(10)
-nx_graph.nodes[1]['title'] = 'Number 1'
-nx_graph.nodes[1]['group'] = 1
-nx_graph.nodes[3]['title'] = 'I belong to a different group!'
-nx_graph.nodes[3]['group'] = 10
-nx_graph.add_node(20, size=20, title='couple', group=2)
-nx_graph.add_node(21, size=15, title='couple', group=2)
-nx_graph.add_edge(20, 21, weight=5)
-nx_graph.add_node(25, size=25, label='lonely', title='lonely node', group=3)
+mindmap = nx.Graph()
+
+flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=50)
+assert flashcard_sample["metadatas"]
+assert flashcard_sample["embeddings"]
+for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
+    mindmap.add_node(id, title=note["term"], label=" ")
+weights = [l2_distance(e1, e2) for (e1, e2) in itertools.combinations(flashcard_sample["embeddings"], 2)]
+for (id1, embedding1), (id2, embedding2) in itertools.combinations(zip(flashcard_sample["ids"], flashcard_sample["embeddings"]), 2):
+    weight = 5*(max(weights) - l2_distance(embedding1, embedding2)) / (max(weights) - min(weights))
+    if weight > 2:
+        mindmap.add_edge(id1, id2, weight=weight, length=200 - 40*weight + 5) #, label=f"{round(100 - 20*weight + 5, 1)}")
+
 nt = Network('500px', '500px')
-# populates the nodes and edges data structures
-nt.from_nx(nx_graph)
+nt.from_nx(mindmap)
+
+nt.show_buttons(filter_=['physics'])
 nt.save_graph("demo.html")
