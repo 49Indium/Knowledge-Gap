@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "knowledge-gap"
+version = "0.1.0"
+description = ""
+authors = ["Isaac Beh <isaacwbeh@gmail.com>"]
+readme = "README.md"
+packages = [{include = "knowledge_gap"}]
+# package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+chromadb = "^0.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
