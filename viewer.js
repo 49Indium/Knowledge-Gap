@@ -169,19 +169,34 @@ d3.json("data/mindmap.json", function(e, graph) {
   let focus = null;
   let selected = null;
 
+  svg.on("mousemove", () => {
+    let pixel_ratio = window.devicePixelRatio;
+    let mouse_x = d3.event.offsetX * pixel_ratio;
+    let mouse_y = d3.event.offsetY * pixel_ratio;
+
+    let col = ctx_hidden.getImageData(mouse_x, mouse_y, 1, 1).data;
+    let col_key = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
+    let node_data = colour_to_node[col_key];
+
+    if (node_data) {
+      setFocus(node_data, false);
+    }
+  });
+
   function setFocus(node, hold) {
     if (hold_focus) {
       return;
     }
 
-    if (focus) d3.select(focus).attr("r", get_slider_prop("radius"));
+    if (focus) focus.attr("r", get_slider_prop("radius"));
     if (focus == node) {
       focus = null;
       hold_focus = false;
     } else {
-      focus = node;
+      focus = v_dom_nodes.filter(d => d.id == node.id);
+      // console.log(focus);
       hold_focus = hold;
-      d3.select(focus).attr("r", 2 * get_slider_prop("radius"));
+      focus.attr("r", 2 * get_slider_prop("radius"));
     }
     svg_select_text.text(node.textContent);
   }
@@ -197,11 +212,9 @@ d3.json("data/mindmap.json", function(e, graph) {
     ret.push((next_col & 0x00ff00) >> 8);   // G
     ret.push((next_col & 0xff0000) >> 16); // B
 
-    next_col += 1;
+    next_col += 10;
     return "rgb(" + ret.join(',') + ")";
   }
-
-  
 
   // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   function dragstarted(node) {
@@ -296,19 +309,19 @@ d3.json("data/mindmap.json", function(e, graph) {
   const v_dom = d3.select(v_dom_base);
   
   const v_dom_edges = v_dom.append("g")
-    .attr("stroke", "#999")
-    .attr("stroke-opacity", 0.6)
     .attr("class", "edges")
     .selectAll("line")
     .data(edges).enter()
-    .append("line");
+    .append("line")
+    .attr("stroke", "#999")
+    .attr("stroke-opacity", 0.6);
   const v_dom_nodes = v_dom.append("g")
-    .attr("stroke", "#fff")
-    .attr("stroke-width", 1.5)
     .attr("class", "nodes")
     .selectAll("circle")
     .data(nodes).enter()
     .append("circle")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 1.5)
     .attr("r", 5)
     .attr("class", node => "group-" + node.group)
     .attr("fill", node => color(node.group))
@@ -375,8 +388,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     ctx.clearRect(0, 0, width, height);
 
     // don't draw edges to hidden since can't interact with them
-    if (!hidden) {
-      
+    if (!hidden) {    
       // Draw each edge
       v_dom_edges.each((edge_data, i, v_edges) => {
         let edge = d3.select(v_edges[i]);
