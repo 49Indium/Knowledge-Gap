@@ -23,6 +23,11 @@ input_sliders.forEach((slider, i) => {
     .attr("id", "slider-" + slider.label)
 });
 
+function get_slider_prop(label) {
+  return d3.select("#slider-" + label)
+    .attr("value")
+}
+
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
 
@@ -68,12 +73,12 @@ d3.json("data/mindmap.json", function(e, graph) {
     svg_nodes.attr("transform", d3.event.transform);
   }
   function start_hover(node) {
-    if (focus) d3.select(focus).attr("r", 5);
+    if (focus) d3.select(focus).attr("r", get_slider_prop("radius"));
     if (focus == d3.event.target) {
       focus = null;
     } else {
       focus = d3.event.target;
-      d3.select(focus).attr("r", 10);
+      d3.select(focus).attr("r", 2 * get_slider_prop("radius"));
     }
     svg_select_text.text(d3.event.target.textContent);
   }
