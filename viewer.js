@@ -1,7 +1,4 @@
-function get_slider_prop(label) {
-  return d3.select("#slider-" + label)
-    .attr("value")
-}
+let toggle_hidden = false;
 
 function spiralForce(x, y, strength) {
   var nodes;
@@ -17,6 +14,18 @@ function spiralForce(x, y, strength) {
   return force;
 }
 
+d3.select("#toggle-visible").on("click", event => {
+  toggle_hidden = !toggle_hidden;
+
+  if (toggle_hidden) {
+    d3.select("#inputs-container")
+      .attr("class", "hidden");
+  } else {
+    d3.select("#inputs-container")
+      .attr("class", null);
+  }
+});
+
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
 
@@ -28,8 +37,8 @@ d3.json("data/mindmap.json", function(e, graph) {
     {
       id: "radius",
       label: "Radius",
-      min: 5,
-      max: 15,
+      min: 2,
+      max: 10,
       default: 5,
       onUpdate: r => svg_nodes.attr("r", r)
     },
@@ -98,13 +107,18 @@ d3.json("data/mindmap.json", function(e, graph) {
     }
   ]
 
+  function get_slider_prop(label) {
+    return d3.select("#slider-" + label)
+      .attr("value")
+  }
+
   function updateSlider(slider, v) {
     d3.select("#slider-" + slider.id).attr("value", v);
     slider.onUpdate(v);
   }
 
   input_sliders.forEach((slider, i) => {
-    const sliderDom = d3.select("#inputs")
+    const sliderDom = d3.select("#input-sliders")
         .append("div")
         .attr("class", "slider");
 
