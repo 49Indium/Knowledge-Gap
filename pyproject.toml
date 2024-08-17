@@ -1,18 +1,16 @@
-[tool.poetry]
+[project]
 name = "knowledge-gap"
 version = "0.1.0"
+
 description = ""
-authors = ["Isaac Beh <isaacwbeh@gmail.com>"]
+authors = ["Isaac Beh <isaacwbeh@gmail.com>", "Tyra Burgess <tyra.m.burgess@gmail.com"]
 readme = "README.md"
 packages = [{include = "knowledge_gap"}]
-# package-mode = false
 
-[tool.poetry.dependencies]
-python = "^3.10"
-chromadb = "^0.5"
-networkx = "^3.3"
-pyvis = "^0.3.2"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+dependencies = [
+  "python^3.10",
+  "chromadb^0.5",
+  "networkx^3.3",
+  "pyvis^0.3.2",
+  "sentence_transformers^3.0.1"
+]
