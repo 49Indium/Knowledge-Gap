@@ -1,6 +1,67 @@
+function get_slider_prop(label) {
+  return d3.select("#slider-" + label)
+    .attr("value")
+}
 
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
+
+  input_sliders = [
+    {
+      id: "radius",
+      label: "Radius",
+      min: 5,
+      max: 15,
+      default: 5,
+      on_update: function (r) {
+        d3.select("#slider-radius").attr("value", r);
+        svg_nodes.attr("r", r);
+      }
+    },
+    {
+      id: "force-centre",
+      label: "Centre Force",
+      min: 0.01,
+      max: 0.1,
+      default: 0.05,
+      on_update: f => simulation
+          .force("centerX", d3.forceX(width  / 2).strength(f))
+          .force("centerY", d3.forceY(height / 2).strength(f))
+          .alphaTarget(0.3).restart()
+    },
+    {
+      id: "force-repel",
+      label: "Repulsion Force",
+      min: 10,
+      max: 40,
+      default: 20,
+      on_update: f => simulation
+          .force("repel", d3.forceManyBody().strength(-f))
+          .alphaTarget(0.3).restart()
+    }
+  ]
+
+  input_sliders.forEach((slider, i) => {
+    const sliderDom = d3.select("#inputs")
+        .append("div")
+        .attr("class", "slider");
+
+    sliderDom.append("label")
+      .attr("for", "slider-" + slider.id)
+      .attr("class", "slider-label")
+      .text(slider.label);
+
+    sliderDom.append("input")
+      .attr("type", "range")
+      .attr("step", "any")
+      .attr("min", slider.min)
+      .attr("max", slider.max)
+      .attr("id", "slider-" + slider.id)
+      .on("input", function() {
+        slider.on_update(+this.value);
+      });
+  });
+
   const svg = d3.select("svg");
   const width = +svg.node().getBoundingClientRect().width;
   const height = +svg.node().getBoundingClientRect().height;
@@ -11,6 +72,8 @@ d3.json("data/mindmap.json", function(e, graph) {
   
   let focus = null;
   
+  let scale = 1;
+
   // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   function dragstarted(node) {
     if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -18,7 +81,6 @@ d3.json("data/mindmap.json", function(e, graph) {
     node.fy = node.y;
   }
   function dragged(node) {
-    console.log(d3.event);
     node.fx = d3.event.x;
     node.fy = d3.event.y;
   }
@@ -33,12 +95,12 @@ d3.json("data/mindmap.json", function(e, graph) {
     svg_nodes.attr("transform", d3.event.transform);
   }
   function start_hover(node) {
-    if (focus) d3.select(focus).attr("r", 5);
+    if (focus) d3.select(focus).attr("r", get_slider_prop("radius"));
     if (focus == d3.event.target) {
       focus = null;
     } else {
       focus = d3.event.target;
-      d3.select(focus).attr("r", 10);
+      d3.select(focus).attr("r", 2 * get_slider_prop("radius"));
     }
     svg_select_text.text(d3.event.target.textContent);
   }
@@ -83,7 +145,9 @@ d3.json("data/mindmap.json", function(e, graph) {
     .data(groups).enter()
     .append("text")
     .attr("id", group => "group-title-" + group.index)
-    .text(group => group.title);
+    .text(group => group.title)
+    .attr("dy", "1em");
+
   svg_nodes.append("title").text(node => node.title);
   svg_nodes.call(d3.drag()
     .on("start", dragstarted)
@@ -119,5 +183,8 @@ d3.json("data/mindmap.json", function(e, graph) {
     .force("centerX", d3.forceX(width / 2).strength(0.05))
     .force("centerY", d3.forceY(height / 2).strength(0.05))
     .on("tick", ticked);
+
+  
+  input_sliders.forEach((slider, i) => slider.on_update(slider.default));
 })
 
