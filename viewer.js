@@ -218,7 +218,7 @@ d3.json("data/mindmap.json", function(e, graph) {
         node_edge_map.delete(selected_id + " " + other_id);
         node_edge_map.delete(other_id + " " + selected_id);
 
-        d3.select("#edge-" + edge.source.id + "-" + edge.target.id).remove();
+        d3.select("#edge-" + edge.index).remove();
 
         const index = edges.indexOf(edge);
         edges.splice(index, 1);
@@ -320,7 +320,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       .attr("y1", edge => edge.source.y)
       .attr("x2", edge => edge.target.x)
       .attr("y2", edge => edge.target.y)
-      .attr("id", edge => "edge-" + edge.source.id + "-" + edge.target.id);
+      .attr("id", edge => "edge-" + edge.index);
     svg_nodes.attr("cx", node => node.x)
       .attr("cy", node => node.y);
     for (group of svg_group_text.nodes()) {
