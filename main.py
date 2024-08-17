@@ -56,17 +56,20 @@ def add_mathematical_definition_notes_to_db(db, notes):
         ids = [note["id"] for note in notes]
     )
 
+def distance_metric(v1, v2):
+    return l2_distance(v1, v2)
+
 def l2_distance(v1, v2):
     return dist(v1, v2)
 
 def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: Literal["Linear Cutoff", "Nearest Neighbours"], db: Optional[chromadb.Collection] = None):
     edges = []
     if mode == "Linear Cutoff":
-        weights = [l2_distance(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
+        weights = [distance_metric(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
         max_weight = max(weights)
         min_weight = min(weights)
         for (id1, embedding1), (id2, embedding2) in itertools.combinations(zip(ids, embeddings), 2):
-            weight = (max_weight - l2_distance(embedding1, embedding2)) / (max_weight - min_weight)
+            weight = (max_weight - distance_metric(embedding1, embedding2)) / (max_weight - min_weight)
             if weight > 0.4:
                 edges.append((id1, id2, {
                              "weight": MAX_EDGE_WEIGHT*weight,
@@ -78,8 +81,8 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
         id_set = set(ids)
         edge_set = set()
 
-        # distance_sample = [l2_distance(*sample(embeddings, 2)) for _ in range(1000)]
-        distance_sample = [l2_distance(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
+        # distance_sample = [distance_metric(*sample(embeddings, 2)) for _ in range(1000)]
+        distance_sample = [distance_metric(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
         max_distance = max(distance_sample)
         min_distance = min(distance_sample)
         weight_cut_off = 0.42
@@ -92,12 +95,20 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
                 include=["embeddings"]
             )
             assert potential_neighbours["embeddings"] and potential_neighbours["embeddings"][0]
+
+            neighbour_zip = zip(potential_neighbours["ids"][0], potential_neighbours["embeddings"][0])
+            sorted_potential_neighbours = sorted(neighbour_zip, key = lambda neighbour: distance_metric(embedding, neighbour[1]))
+            
             potential_edges: list[tuple[float, str, chromadb.types.Vector]] = []
-            for neighbour_id, neighbour_embedding in zip(potential_neighbours["ids"][0], potential_neighbours["embeddings"][0]):
-                if neighbour_id not in id_set:
+            for neighbour_id, neighbour_embedding in sorted_potential_neighbours:
+                if neighbour_id not in id_set or neighbour_id == id:
                     continue
-                distance = l2_distance(embedding, neighbour_embedding)
-                if weight_calc(distance) < weight_cut_off or id == neighbour_id:
+                distance = distance_metric(embedding, neighbour_embedding)
+                if not potential_edges:
+                    # always have one edge.
+                    potential_edges.append((distance, neighbour_id, neighbour_embedding))
+                    continue
+                if weight_calc(distance) < weight_cut_off:
                     continue
                 potential_edges.append((distance, neighbour_id, neighbour_embedding))
 
@@ -144,7 +155,7 @@ def get_closest_term(terms, vector):
     current_min_distance = 10000
     current_min_term = ""
     for term in [t.lower() for t in terms]:
-        distance = l2_distance(EMBEDDING_FUNCTION([term])[0], vector)
+        distance = distance_metric(EMBEDDING_FUNCTION([term])[0], vector)
         if distance < current_min_distance:
             current_min_distance = distance
             current_min_term = term
