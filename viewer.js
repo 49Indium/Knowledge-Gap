@@ -6,10 +6,11 @@ d3.json("data/mindmap.json", function(e, graph) {
   const height = +svg.node().getBoundingClientRect().height;
   const nodes = graph.nodes;
   const edges = graph.edges;
+  const groups = graph.groups;
+  const color = d3.scaleOrdinal(d3.schemeCategory10);
   
   let focus = null;
-  let scale = 1;
-
+  
   // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   function dragstarted(node) {
     if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -39,7 +40,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       focus = d3.event.target;
       d3.select(focus).attr("r", 10);
     }
-    svg_text.text(d3.event.target.textContent);
+    svg_select_text.text(d3.event.target.textContent);
   }
   
   const svg_edges = svg.append("g")
@@ -57,14 +58,32 @@ d3.json("data/mindmap.json", function(e, graph) {
     .data(nodes).enter()
     .append("circle")
     .attr("r", 5)
+    .attr("class", node => "group-" + node.group)
+    .attr("fill", node => color(node.group))
     .on("click", start_hover)
     .on("mouseover", start_hover);
-  const svg_text = svg.append("text")
+  const svg_select_text = svg.append("text")
     .text("")
     .attr("x", "50%")
     .attr("y", "1em")
     .attr("text-anchor", "middle")
-    .attr("dy", "1em");
+    .attr("dy", "1em")
+    .attr("stroke", "white")
+    .attr("stroke-width", "4")
+    .attr("fill", "black")
+    .attr("paint-order", "stroke");
+  const svg_group_text = svg.append("g")
+    .attr("text-anchor", "middle")
+    .attr("dy", "1em")
+    .attr("stroke", "white")
+    .attr("stroke-width", "4")
+    .attr("fill", "black")
+    .attr("paint-order", "stroke")
+    .selectAll("text")
+    .data(groups).enter()
+    .append("text")
+    .attr("id", group => "group-title-" + group.index)
+    .text(group => group.title);
   svg_nodes.append("title").text(node => node.title);
   svg_nodes.call(d3.drag()
     .on("start", dragstarted)
@@ -79,6 +98,18 @@ d3.json("data/mindmap.json", function(e, graph) {
       .attr("y2", edge => edge.target.y);
     svg_nodes.attr("cx", node => node.x)
       .attr("cy", node => node.y);
+    for (group of svg_group_text.nodes()) {
+      let sum_x = 0;
+      let sum_y = 0;
+      let n = d3.selectAll(".group-" + group.__data__.index).nodes().length;
+      for (circ of d3.selectAll(".group-" + group.__data__.index).nodes()) {
+        sum_x += circ.cx.baseVal.value;
+        sum_y += circ.cy.baseVal.value;
+      }
+      d3.selectAll("#group-title-" + group.__data__.index)
+        .attr("x", sum_x / n)
+        .attr("y", sum_y / n)
+    }
   }
 
   const simulation = d3.forceSimulation(nodes)
