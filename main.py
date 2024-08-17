@@ -78,7 +78,7 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
         distance_sample = [l2_distance(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
         max_distance = max(distance_sample)
         min_distance = min(distance_sample)
-        weight_cut_off = 0.42
+        weight_cut_off = 0.35
         weight_calc = lambda d: max(0, (max_distance - d) / (max_distance - min_distance))
                
         for id, embedding in zip(ids, embeddings):
@@ -102,12 +102,12 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
             for i, (distance, neighbour_id, neighbour_embedding) in enumerate(potential_edges[0:9]):
                 if capacity < 0:
                     break
-                capacity -= (i*0.2 + 1)*(1 - weight_calc(distance))
+                capacity -= (i*0.5 + 1)*(1 - weight_calc(distance))
                 if (id, neighbour_id) in edge_set:
                     continue
                 edges.append((id, neighbour_id, {
                                  "weight": MAX_EDGE_WEIGHT * weight_calc(distance),
-                                 "length": LONGEST_EDGE_SPRING_LENGTH*(1-weight_calc(distance)),
+                                 "length": LONGEST_EDGE_SPRING_LENGTH*(1-weight_calc(distance)+0.4)/(1-0.4),
                                  "label": f"{round(weight_calc(distance),2)}"
                              }))
                 edge_set.add((id, neighbour_id))
@@ -117,6 +117,13 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
         assert False
     return edges
             
+def reduce_edges(network: nx.Graph):
+    for node in sorted(list(network.nodes()), key=network.degree, reverse=True):
+        if network.degree(node) < 7:
+            continue# TODO change to break
+        sorted_edges = sorted(list(network.edges(node, True)), key=lambda e: e[2]["weight"] if (e and e[2]) else 0, reverse=True)
+        sorted_edges = [(u,v) for u,v,_ in sorted_edges if network.degree(u) > 1 and network.degree(v) > 1]
+        network.remove_edges_from(sorted_edges[min(10,len(sorted_edges)):])
 
 chroma_client = chromadb.PersistentClient(path="data/chromadb")
 
@@ -142,6 +149,7 @@ assert flashcard_sample["embeddings"]
 for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
     mindmap.add_node(id, title=note["term"], label=" ")
 mindmap.add_edges_from(create_edges(flashcard_sample["ids"], flashcard_sample["embeddings"], "Nearest Neighbours", db=flashcards_db))
+reduce_edges(mindmap)
 
 nt = Network('700px', '100%')
 nt.from_nx(mindmap,show_edge_weights=True)
