@@ -6,6 +6,9 @@ function get_slider_prop(label) {
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
 
+  forceConnection = 1.2;
+  distanceConnection = 10;
+
   input_sliders = [
     {
       id: "radius",
@@ -13,10 +16,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       min: 5,
       max: 15,
       default: 5,
-      on_update: function (r) {
-        d3.select("#slider-radius").attr("value", r);
-        svg_nodes.attr("r", r);
-      }
+      onUpdate: r => svg_nodes.attr("r", r)
     },
     {
       id: "force-centre",
@@ -24,7 +24,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       min: 0.01,
       max: 0.1,
       default: 0.05,
-      on_update: f => simulation
+      onUpdate: f => simulation
           .force("centerX", d3.forceX(width  / 2).strength(f))
           .force("centerY", d3.forceY(height / 2).strength(f))
           .alphaTarget(0.3).restart()
@@ -35,11 +35,50 @@ d3.json("data/mindmap.json", function(e, graph) {
       min: 10,
       max: 40,
       default: 20,
-      on_update: f => simulation
+      onUpdate: f => simulation
           .force("repel", d3.forceManyBody().strength(-f))
           .alphaTarget(0.3).restart()
+    },
+    {
+      id: "force-connection",
+      label: "Connection Force",
+      min: 0.5,
+      max: 2,
+      default: forceConnection,
+      onUpdate: f => {
+        forceConnection = f;
+        
+        simulation
+          .force("connection", d3.forceLink(edges)
+          .id(node => node.id)
+          .distance(edge => 1 + distanceConnection/edge.weight)
+          .strength(edge => f/edge.weight))
+          .alphaTarget(0.3).restart();
+      }
+    },
+    {
+      id: "distance-connection",
+      label: "Connection Distance",
+      min: 0.5,
+      max: 40,
+      default: distanceConnection,
+      onUpdate: d => {
+        distanceConnection = d;
+
+        simulation
+          .force("connection", d3.forceLink(edges)
+          .id(node => node.id)
+          .distance(edge => 1 + d/edge.weight)
+          .strength(edge => forceConnection/edge.weight))
+          .alphaTarget(0.3).restart();
+      }
     }
   ]
+
+  function updateSlider(slider, v) {
+    d3.select("#slider-" + slider.id).attr("value", v);
+    slider.onUpdate(v);
+  }
 
   input_sliders.forEach((slider, i) => {
     const sliderDom = d3.select("#inputs")
@@ -58,7 +97,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       .attr("max", slider.max)
       .attr("id", "slider-" + slider.id)
       .on("input", function() {
-        slider.on_update(+this.value);
+        updateSlider(slider, +this.value);
       });
   });
 
@@ -94,7 +133,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     svg_edges.attr("transform", d3.event.transform);
     svg_nodes.attr("transform", d3.event.transform);
   }
-  function start_hover(node) {
+  function startHover(node) {
     if (focus) d3.select(focus).attr("r", get_slider_prop("radius"));
     if (focus == d3.event.target) {
       focus = null;
@@ -122,8 +161,8 @@ d3.json("data/mindmap.json", function(e, graph) {
     .attr("r", 5)
     .attr("class", node => "group-" + node.group)
     .attr("fill", node => color(node.group))
-    .on("click", start_hover)
-    .on("mouseover", start_hover);
+    .on("click", startHover)
+    .on("mouseover", startHover);
   const svg_select_text = svg.append("text")
     .text("")
     .attr("x", "50%")
@@ -155,7 +194,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     .on("end", dragended));
   svg.call(d3.zoom().on("zoom", pan))
 
-  ticked = function () {
+  function ticked() {
     svg_edges.attr("x1", edge => edge.source.x)
       .attr("y1", edge => edge.source.y)
       .attr("x2", edge => edge.target.x)
@@ -185,6 +224,6 @@ d3.json("data/mindmap.json", function(e, graph) {
     .on("tick", ticked);
 
   
-  input_sliders.forEach((slider, i) => slider.on_update(slider.default));
+  input_sliders.forEach((slider, i) => updateSlider(slider, slider.default));
 })
 

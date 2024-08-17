@@ -31,7 +31,7 @@
         };
       }));
 
-      python = pkgs.python310;
+      python = pkgs.python311;
     in
     {
     
