@@ -4,12 +4,13 @@ import chromadb
 import chromadb.types
 import csv
 import itertools
+import operator
 from math import dist
 from typing import Literal, Optional
 from random import sample
 
 LONGEST_EDGE_SPRING_LENGTH = 20
-MAX_EDGE_WEIGHT = 6
+MAX_EDGE_WEIGHT = 10
 
 def read_mathematical_definition_notes(filepath="data/MathsDefinitionNotes.txt"):
     with open(filepath, newline="") as notefile:
@@ -73,28 +74,41 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
         id_set = set(ids)
         edge_set = set()
 
-        distance_sample = [l2_distance(*sample(embeddings, 2)) for _ in range(1000)]
+        # distance_sample = [l2_distance(*sample(embeddings, 2)) for _ in range(1000)]
+        distance_sample = [l2_distance(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
         max_distance = max(distance_sample)
         min_distance = min(distance_sample)
-        distance_cut_off = 0.04 * (max_distance - min_distance) + min_distance
-        weight_calc = lambda d: max(0, MAX_EDGE_WEIGHT*(max_distance - d) / (max_distance - min_distance))
+        weight_cut_off = 0.42
+        weight_calc = lambda d: max(0, (max_distance - d) / (max_distance - min_distance))
                
         for id, embedding in zip(ids, embeddings):
             potential_neighbours = db.query(
                 query_embeddings=embedding,
-                n_results=20,
+                n_results=30,
                 include=["embeddings"]
             )
             assert potential_neighbours["embeddings"] and potential_neighbours["embeddings"][0]
+            potential_edges: list[tuple[float, str, chromadb.types.Vector]] = []
             for neighbour_id, neighbour_embedding in zip(potential_neighbours["ids"][0], potential_neighbours["embeddings"][0]):
-                if neighbour_id not in id_set or (id, neighbour_id) in edge_set:
+                if neighbour_id not in id_set:
                     continue
                 distance = l2_distance(embedding, neighbour_embedding)
-                if distance < distance_cut_off:
+                if weight_calc(distance) < weight_cut_off or weight_calc(distance) > 0.99:
+                    continue
+                potential_edges.append((distance, neighbour_id, neighbour_embedding))
+
+            potential_edges.sort(key=operator.itemgetter(2), reverse=True)
+            capacity = 1.5
+            for i, (distance, neighbour_id, neighbour_embedding) in enumerate(potential_edges[0:9]):
+                if capacity < 0:
+                    break
+                capacity -= (i*0.2 + 1)*(1 - weight_calc(distance))
+                if (id, neighbour_id) in edge_set:
                     continue
                 edges.append((id, neighbour_id, {
-                                 "weight": weight_calc(distance),
-                                 "length": LONGEST_EDGE_SPRING_LENGTH*(1-weight_calc(distance))
+                                 "weight": MAX_EDGE_WEIGHT * weight_calc(distance),
+                                 "length": LONGEST_EDGE_SPRING_LENGTH*(1-weight_calc(distance)),
+                                 "label": f"{round(weight_calc(distance),2)}"
                              }))
                 edge_set.add((id, neighbour_id))
             
@@ -103,6 +117,7 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
         assert False
     return edges
             
+
 chroma_client = chromadb.PersistentClient(path="data/chromadb")
 
 flashcards_db = chroma_client.get_or_create_collection(name="flashcards")
@@ -121,7 +136,7 @@ flashcards_db = chroma_client.get_or_create_collection(name="flashcards")
 
 mindmap = nx.Graph()
 
-flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=70)
+flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=200)
 assert flashcard_sample["metadatas"]
 assert flashcard_sample["embeddings"]
 for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
@@ -129,7 +144,7 @@ for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
 mindmap.add_edges_from(create_edges(flashcard_sample["ids"], flashcard_sample["embeddings"], "Nearest Neighbours", db=flashcards_db))
 
 nt = Network('700px', '100%')
-nt.from_nx(mindmap)
+nt.from_nx(mindmap,show_edge_weights=True)
 # nt.barnes_hut(
 #     central_gravity=5.0,
 #     spring_strength=0.06,
