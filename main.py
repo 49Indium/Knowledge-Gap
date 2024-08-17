@@ -7,7 +7,6 @@ import csv
 import json
 import itertools
 import operator
-import time
 from math import dist
 from typing import Literal, Optional
 from random import sample
@@ -190,16 +189,11 @@ mindmap.add_edges_from(create_edges(flashcard_sample["ids"], flashcard_sample["e
 reduce_edges(mindmap)
 
 partition = nx.community.louvain_communities(mindmap)
-start = time.time()
-for p in partition:
-    print(get_closest_term(get_all_terms(p), average_vector(p)))
-end = time.time()
-print(f"this took {start-end} time")
 
 export_dict = {
     "nodes": [{"id": id, "title": node_data["title"], "group": [i for i, g in enumerate(partition) if id in g][0]} for id, node_data in mindmap.nodes(True)],
     "edges": [{"source": u, "target": v, "label": edge_data["label"], "weight": edge_data["weight"]} for u, v, edge_data in mindmap.edges(None, True)],
-    "groups": [{"title": "test" if len(p) > 4 else "", "index": i} for i, p in enumerate(partition)]
+    "groups": [{"title": get_closest_term(get_all_terms(p), average_vector(p)) if len(p) > 4 else "", "index": i} for i, p in enumerate(partition)]
 }
 with open("data/mindmap.json", "w") as json_file:
     json.dump(export_dict, json_file, indent="\t", sort_keys=True)
