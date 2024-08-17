@@ -3,6 +3,12 @@ html, body, canvas, svg {
   width: 100%;
   overflow: hidden;
   margin: 0;
+
+  /* make clicking work without dragging capturing events */
+  -webkit-user-select: none;  /* Chrome all / Safari all */
+  -moz-user-select: none;     /* Firefox all */
+  -ms-user-select: none;      /* IE 10+ */
+  user-select: none;          /* Likely future */
 }
 
 #canvas-hidden {

@@ -149,9 +149,9 @@ d3.json("data/mindmap.json", function(e, graph) {
       });
   });
 
-  const canvas = d3.select("#canvas-main");
-  const canvas_hidden = d3.select("#canvas-hidden");
-  const svg = d3.select("svg");
+  const canvas = d3.select("#canvas-main").attr("draggable", false);
+  const canvas_hidden = d3.select("#canvas-hidden").attr("draggable", false);
+  const svg = d3.select("svg").attr("draggable", false);
   const nodes = graph.nodes;
   const edges = graph.edges;
   const groups = graph.groups;
@@ -168,19 +168,54 @@ d3.json("data/mindmap.json", function(e, graph) {
   let hold_focus = false;
   let focus = null;
   let selected = null;
+  let clicked = null;
 
-  svg.on("mousemove", () => {
+  function nodeFromEvent(event) {
     let pixel_ratio = window.devicePixelRatio;
-    let mouse_x = d3.event.offsetX * pixel_ratio;
-    let mouse_y = d3.event.offsetY * pixel_ratio;
+    let mouse_x = event.offsetX * pixel_ratio;
+    let mouse_y = event.offsetY * pixel_ratio;
 
     let col = ctx_hidden.getImageData(mouse_x, mouse_y, 1, 1).data;
     let col_key = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
-    let node_data = colour_to_node[col_key];
+    return colour_to_node[col_key];
+  }
 
-    if (node_data) {
-      setFocus(node_data, false);
+  svg.on("mousemove", () => {
+    node_data = nodeFromEvent(d3.event);
+    if (!node_data)
+      return;
+      
+    setFocus(node_data, false);
+  });
+
+  let mouse_held_ticks = 0;
+  let mouse_hold_int = null;
+  
+  svg.on("mousedown", () => {
+    node_data = nodeFromEvent(d3.event);
+    if (!node_data && !clicked)
+      return;
+
+    if (!clicked) {
+      clicked = v_dom_nodes.filter(d => d.id == node_data.id);
     }
+
+    clearInterval(mouse_hold_int);
+    // val = 0;
+    mouse_hold_int = setInterval(() => {
+      console.log(++mouse_held_ticks);
+    }, 50);
+  });
+
+  svg.on("mouseup", () => {
+    if (mouse_held_ticks < 4 && clicked) {
+      // Select
+      clickNode(clicked);
+    }
+
+    clicked = null;
+    mouse_held_ticks = 0;
+    clearInterval(mouse_hold_int);
   });
 
   function setFocus(node, hold) {
@@ -217,26 +252,26 @@ d3.json("data/mindmap.json", function(e, graph) {
     return "rgb(" + ret.join(',') + ")";
   }
 
-  // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
-  function dragstarted(node) {
-    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-    node.fx = node.x;
-    node.fy = node.y;
+  // // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
+  // function dragstarted(node) {
+  //   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  //   node.fx = node.x;
+  //   node.fy = node.y;
 
-    setFocus(this, true);
-  }
-  function dragged(node) {
-    node.fx = d3.event.x;
-    node.fy = d3.event.y;
-  }
-  function dragended(node) {
-    // no longer want to stop simulation since we are orbitting
-    // if (!d3.event.active) simulation.alphaTarget(0);
-    node.fx = null;
-    node.fy = null;
+  //   setFocus(this, true);
+  // }
+  // function dragged(node) {
+  //   node.fx = d3.event.x;
+  //   node.fy = d3.event.y;
+  // }
+  // function dragended(node) {
+  //   // no longer want to stop simulation since we are orbitting
+  //   // if (!d3.event.active) simulation.alphaTarget(0);
+  //   node.fx = null;
+  //   node.fy = null;
 
-    setFocus(this, false);
-  }
+  //   setFocus(this, false);
+  // }
   function pan() {
     scale = d3.event.transform.k;
     v_dom_edges.attr("transform", d3.event.transform);
@@ -248,15 +283,15 @@ d3.json("data/mindmap.json", function(e, graph) {
 
   function clickNode(node) {
     if (selected) {
-      other = d3.event.target;
+      other = d3.select(node);
       if (other == selected) {
-        d3.select(selected).attr("stroke", "$fff");
+        selected.attr("stroke", "$fff");
         selected = null;
         return;
       }
 
-      let selected_id = selected.__data__.id;
-      let other_id = other.__data__.id;
+      let selected_id = selected.datum().id;
+      let other_id = node.datum().id;
       let edge = node_edge_map.get(selected_id + " " + other_id);
       if (edge) {
         // remove edge
@@ -290,12 +325,13 @@ d3.json("data/mindmap.json", function(e, graph) {
         // node_edge_map.set(other_id + " " + selected_id, edge);
       }
 
-      d3.select(selected).attr("stroke", "$fff");
+      selected.attr("stroke", "$fff");
       selected = null;
     } else {
-      selected = d3.event.target;
-      d3.select(selected)
-        .attr("stroke", "#000")
+      // console.log(node);
+      
+      selected = node;
+      selected.attr("stroke", "#000")
         .attr("stroke-width", 1.5)
         .attr("class", v => v.class + " selected");
     }
@@ -334,9 +370,8 @@ d3.json("data/mindmap.json", function(e, graph) {
       }
 
       return node.hidden_colour;      
-    })
-    .on("click", clickNode)
-    .on("mouseover", startHover);
+    });
+
   const svg_group_text = svg.append("g")
     .attr("text-anchor", "middle")
     .attr("dy", "1em")
@@ -373,11 +408,6 @@ d3.json("data/mindmap.json", function(e, graph) {
   });
 
   v_dom_nodes.append("title").text(node => node.title);
-  v_dom_nodes.call(d3.drag()
-    .on("start", dragstarted)
-    .on("drag", dragged)
-    .on("end", dragended));
-  svg.call(d3.zoom().on("zoom", pan))
 
   function drawToCanvas(canvas, ctx, hidden) {
     let pixel_ratio = window.devicePixelRatio;
