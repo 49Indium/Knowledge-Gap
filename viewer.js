@@ -5,8 +5,7 @@ d3.json("data/mindmap.json", function(e, graph) {
   const width = +svg.node().getBoundingClientRect().width;
   const height = +svg.node().getBoundingClientRect().height;
   const nodes = graph.nodes;
-  const edges = graph.links;
-  console.log("hi")
+  const edges = graph.edges;
 
   // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   function dragstarted(node) {
@@ -39,7 +38,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     .data(nodes).enter()
     .append("circle")
     .attr("r", 5);
-  svg_nodes.append("title").text(node => node.id);
+  svg_nodes.append("title").text(node => node.title);
   svg_nodes.call(d3.drag()
     .on("start", dragstarted)
     .on("drag", dragged)
@@ -53,11 +52,13 @@ d3.json("data/mindmap.json", function(e, graph) {
     svg_nodes.attr("cx", node => node.x)
       .attr("cy", node => node.y)
   }
-  
+
   const simulation = d3.forceSimulation(nodes)
-    .force("connection", d3.forceLink(edges).id(node => node.id))
-    .force("repel", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2))
+    .velocityDecay(0.1) 
+    .force("connection", d3.forceLink(edges).id(node => node.id).distance(edge => 1 + 10/edge.weight).strength(edge => 1.2/edge.weight))
+    .force("repel", d3.forceManyBody().strength(-20))
+    .force("centerX", d3.forceX(width / 2).strength(0.05))
+    .force("centerY", d3.forceY(height / 2).strength(0.05))
     .on("tick", ticked);
 
   // return svg.node();

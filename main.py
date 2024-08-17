@@ -4,6 +4,7 @@ import chromadb
 import chromadb.types
 from chromadb.utils import embedding_functions
 import csv
+import json
 import itertools
 import operator
 from math import dist
@@ -138,11 +139,11 @@ flashcards_db = chroma_client.get_or_create_collection(name="flashcards", embedd
 
 # print(flashcards_db.peek(1))
 
-results = flashcards_db.query(
-    query_texts=["clopen"],
-    n_results=5
-)
-print(f"Results {results}")
+# results = flashcards_db.query(
+#     query_texts=["clopen"],
+#     n_results=5
+# )
+# print(f"Results {results}")
 
 mindmap = nx.Graph()
 
@@ -154,13 +155,20 @@ for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
 mindmap.add_edges_from(create_edges(flashcard_sample["ids"], flashcard_sample["embeddings"], "Nearest Neighbours", db=flashcards_db))
 reduce_edges(mindmap)
 
-nt = Network('700px', '100%')
-nt.from_nx(mindmap,show_edge_weights=True)
+export_dict = {
+    "nodes": [{"id": id, "title": node_data["title"]} for id, node_data in mindmap.nodes(True)],
+    "edges": [{"source": u, "target": v, "label": edge_data["label"], "weight": edge_data["weight"]} for u, v, edge_data in mindmap.edges(None, True)]
+}
+with open("data/mindmap.json", "w") as json_file:
+    json.dump(export_dict, json_file, indent="\t", sort_keys=True)
+
+# nt = Network('700px', '100%')
+# nt.from_nx(mindmap,show_edge_weights=True)
 # nt.barnes_hut(
 #     central_gravity=5.0,
 #     spring_strength=0.06,
 #     damping=0.25
 # )
 
-nt.show_buttons(filter_=['physics'])
-nt.save_graph("demo.html")
+# nt.show_buttons(filter_=['physics'])
+# nt.save_graph("demo.html")
