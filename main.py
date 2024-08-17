@@ -7,6 +7,7 @@ import csv
 import json
 import itertools
 import operator
+import time
 from math import dist
 from typing import Literal, Optional
 from random import sample
@@ -129,10 +130,43 @@ def reduce_edges(network: nx.Graph):
         sorted_edges = [(u,v) for u,v,_ in sorted_edges if network.degree(u) > 1 and network.degree(v) > 1]
         network.remove_edges_from(sorted_edges[min(10,len(sorted_edges)):])
 
+def get_all_terms(group: list[tuple[str, dict]]):
+    terms = []
+    for id in group:
+        document = flashcards_db.get(id)["documents"][0]
+        terms += get_all_words(document)
+    return terms
+
+def get_all_words(s):
+    removed_spaces = [''.join(c for c in a if c.isalnum()) for a in s.split()]
+    return [a for a in removed_spaces if len(a) > 3]
+
+def get_closest_term(terms, vector):
+    current_min_distance = 10000
+    current_min_term = ""
+    for term in [t.lower() for t in terms]:
+        distance = l2_distance(EMBEDDING_FUNCTION([term])[0], vector)
+        if distance < current_min_distance:
+            current_min_distance = distance
+            current_min_term = term
+    return current_min_term
+            
+def average_vector(ids):
+    sum = []
+    for id in ids:
+        embedding = flashcards_db.get(id, include=["embeddings"])["embeddings"][0]
+        if sum:
+            sum = [s + e for s, e in zip(sum, embedding)]
+        else:
+            sum = embedding
+    return sum
+
 chroma_client = chromadb.PersistentClient(path="data/chromadb")
 
 flashcards_db = chroma_client.get_or_create_collection(name="flashcards", embedding_function=EMBEDDING_FUNCTION)
 # chroma_client.delete_collection(name="flashcards")
+
+dictionary_db = chroma_client.get_or_create_collection(name="dictionary", embedding_function=EMBEDDING_FUNCTION)
 
 # notes = read_mathematical_definition_notes()
 # add_mathematical_definition_notes_to_db(flashcards_db, notes)
@@ -156,6 +190,11 @@ mindmap.add_edges_from(create_edges(flashcard_sample["ids"], flashcard_sample["e
 reduce_edges(mindmap)
 
 partition = nx.community.louvain_communities(mindmap)
+start = time.time()
+for p in partition:
+    print(get_closest_term(get_all_terms(p), average_vector(p)))
+end = time.time()
+print(f"this took {start-end} time")
 
 export_dict = {
     "nodes": [{"id": id, "title": node_data["title"], "group": [i for i, g in enumerate(partition) if id in g][0]} for id, node_data in mindmap.nodes(True)],
