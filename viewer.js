@@ -1,6 +1,31 @@
+input_sliders = [
+  {
+    label: "radius",
+    min: 5,
+    max: 15
+  }
+]
+
+input_sliders.forEach((slider, i) => {
+  const sliderDom = d3.select("#inputs")
+      .append("div")
+      .attr("class", "slider");
+
+  sliderDom.append("label")
+    .attr("for", "slider-" + slider.label)
+    .attr("class", "slider-label")
+    .text(slider.label);
+
+  sliderDom.append("input")
+    .attr("type", "range")
+    .attr("min", slider.min)
+    .attr("max", slider.max)
+    .attr("id", "slider-" + slider.label)
+});
 
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
+
   const svg = d3.select("svg");
   const width = +svg.node().getBoundingClientRect().width;
   const height = +svg.node().getBoundingClientRect().height;
@@ -10,7 +35,18 @@ d3.json("data/mindmap.json", function(e, graph) {
   const color = d3.scaleOrdinal(d3.schemeCategory10);
   
   let focus = null;
+  let scale = 1;
+
+
+  d3.select("#slider-radius").on("input", function() {
+    update_radius(+this.value);
+  });
   
+  function update_radius(r) {
+    d3.select("#slider-radius").attr("value", r);
+    svg_nodes.attr("r", r);
+  }
+
   // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   function dragstarted(node) {
     if (!d3.event.active) simulation.alphaTarget(0.3).restart();
@@ -18,7 +54,6 @@ d3.json("data/mindmap.json", function(e, graph) {
     node.fy = node.y;
   }
   function dragged(node) {
-    console.log(d3.event);
     node.fx = d3.event.x;
     node.fy = d3.event.y;
   }
@@ -84,6 +119,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     .append("text")
     .attr("id", group => "group-title-" + group.index)
     .text(group => group.title);
+    .attr("dy", "1em");
   svg_nodes.append("title").text(node => node.title);
   svg_nodes.call(d3.drag()
     .on("start", dragstarted)

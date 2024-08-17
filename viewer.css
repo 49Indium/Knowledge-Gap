@@ -4,3 +4,25 @@ html, body, svg {
   overflow: hidden;
   margin: 0;
 }
+
+#inputs {
+  height: fit-content;
+  width: fit-content;
+  position: absolute;
+  z-index: 1;
+  bottom: 10px;
+  left: 10px;
+}
+
+.slider {
+  display: flex;           /* Make parent a flex-container */
+  justify-content: center; /* Centers child horizontally */
+  align-items: center;     /* Centers child vertically */
+  gap: 3px;
+}
+
+.slider-label {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: right;
+}
