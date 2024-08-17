@@ -2,6 +2,7 @@ from pyvis.network import Network
 import networkx as nx
 import chromadb
 import chromadb.types
+from chromadb.utils import embedding_functions
 import csv
 import itertools
 import operator
@@ -11,6 +12,8 @@ from random import sample
 
 LONGEST_EDGE_SPRING_LENGTH = 20
 MAX_EDGE_WEIGHT = 10
+
+EMBEDDING_FUNCTION = embedding_functions.SentenceTransformerEmbeddingFunction(model_name='embaas/sentence-transformers-gte-base')
 
 def read_mathematical_definition_notes(filepath="data/MathsDefinitionNotes.txt"):
     with open(filepath, newline="") as notefile:
@@ -78,7 +81,7 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
         distance_sample = [l2_distance(e1, e2) for (e1, e2) in itertools.combinations(embeddings, 2)]
         max_distance = max(distance_sample)
         min_distance = min(distance_sample)
-        weight_cut_off = 0.35
+        weight_cut_off = 0.42
         weight_calc = lambda d: max(0, (max_distance - d) / (max_distance - min_distance))
                
         for id, embedding in zip(ids, embeddings):
@@ -93,7 +96,7 @@ def create_edges(ids: list[str], embeddings: list[chromadb.types.Vector], mode: 
                 if neighbour_id not in id_set:
                     continue
                 distance = l2_distance(embedding, neighbour_embedding)
-                if weight_calc(distance) < weight_cut_off or weight_calc(distance) > 0.99:
+                if weight_calc(distance) < weight_cut_off or id == neighbour_id:
                     continue
                 potential_edges.append((distance, neighbour_id, neighbour_embedding))
 
@@ -127,7 +130,7 @@ def reduce_edges(network: nx.Graph):
 
 chroma_client = chromadb.PersistentClient(path="data/chromadb")
 
-flashcards_db = chroma_client.get_or_create_collection(name="flashcards")
+flashcards_db = chroma_client.get_or_create_collection(name="flashcards", embedding_function=EMBEDDING_FUNCTION)
 # chroma_client.delete_collection(name="flashcards")
 
 # notes = read_mathematical_definition_notes()
@@ -135,15 +138,15 @@ flashcards_db = chroma_client.get_or_create_collection(name="flashcards")
 
 # print(flashcards_db.peek(1))
 
-# results = flashcards_db.query(
-#     query_texts=["clopen"],
-#     n_results=5
-# )
-# print(f"Results {results}")
+results = flashcards_db.query(
+    query_texts=["clopen"],
+    n_results=5
+)
+print(f"Results {results}")
 
 mindmap = nx.Graph()
 
-flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=200)
+flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=500)
 assert flashcard_sample["metadatas"]
 assert flashcard_sample["embeddings"]
 for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
