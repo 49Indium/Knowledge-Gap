@@ -3,13 +3,28 @@ function get_slider_prop(label) {
     .attr("value")
 }
 
+function spiralForce(x, y, strength) {
+  var nodes;
+  function force() {
+    for (let i = 0; i < nodes.length; i++) {
+      nodes[i].x += strength * (nodes[i].y - y);
+      nodes[i].y -= strength * (nodes[i].x - x);
+    }
+  }
+  force.initialize = function(ns) {
+    nodes = ns;
+  }
+  return force;
+}
+
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
 
-  forceConnection = 1.2;
-  distanceConnection = 10;
+  let forceConnection = 1.2;
+  let distanceConnection = 10;
+  let spiralForceDefault = 0.001;
 
-  input_sliders = [
+  let input_sliders = [
     {
       id: "radius",
       label: "Radius",
@@ -72,6 +87,14 @@ d3.json("data/mindmap.json", function(e, graph) {
           .strength(edge => forceConnection/edge.weight))
           .alphaTarget(0.3).restart();
       }
+    },
+    {
+      id: "force-spiral",
+      label: "Spiral Force",
+      min: -0.03,
+      max: 0.03,
+      default: spiralForceDefault,
+      onUpdate: f => simulation.force("spiral", spiralForce(width/2, height/2, f))
     }
   ]
 
@@ -221,6 +244,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     .force("repel", d3.forceManyBody().strength(-20))
     .force("centerX", d3.forceX(width / 2).strength(0.05))
     .force("centerY", d3.forceY(height / 2).strength(0.05))
+    .force("spiral", spiralForce(width/2, height/2, spiralForceDefault))
     .on("tick", ticked);
 
   
