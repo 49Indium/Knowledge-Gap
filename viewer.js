@@ -103,7 +103,9 @@ d3.json("data/mindmap.json", function(e, graph) {
       min: -0.03,
       max: 0.03,
       default: spiralForceDefault,
-      onUpdate: f => simulation.force("spiral", spiralForce(width/2, height/2, f))
+      onUpdate: f => simulation
+        .force("spiral", spiralForce(width/2, height/2, f))
+        .alphaTarget(0.3).restart()
     }
   ]
 
@@ -161,7 +163,8 @@ d3.json("data/mindmap.json", function(e, graph) {
     node.fy = d3.event.y;
   }
   function dragended(node) {
-    if (!d3.event.active) simulation.alphaTarget(0);
+    // no longer want to stop simulation since we are orbitting
+    // if (!d3.event.active) simulation.alphaTarget(0);
     node.fx = null;
     node.fy = null;
   }
