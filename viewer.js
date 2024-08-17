@@ -6,6 +6,9 @@ d3.json("data/mindmap.json", function(e, graph) {
   const height = +svg.node().getBoundingClientRect().height;
   const nodes = graph.nodes;
   const edges = graph.edges;
+  
+  let focus = null;
+  let scale = 1;
 
   // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   function dragstarted(node) {
@@ -14,6 +17,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     node.fy = node.y;
   }
   function dragged(node) {
+    console.log(d3.event);
     node.fx = d3.event.x;
     node.fy = d3.event.y;
   }
@@ -23,9 +27,19 @@ d3.json("data/mindmap.json", function(e, graph) {
     node.fy = null;
   }
   function pan() {
-    console.log(d3.event)
+    scale = d3.event.transform.k;
     svg_edges.attr("transform", d3.event.transform);
     svg_nodes.attr("transform", d3.event.transform);
+  }
+  function start_hover(node) {
+    if (focus) d3.select(focus).attr("r", 5);
+    if (focus == d3.event.target) {
+      focus = null;
+    } else {
+      focus = d3.event.target;
+      d3.select(focus).attr("r", 10);
+    }
+    svg_text.text(d3.event.target.textContent);
   }
   
   const svg_edges = svg.append("g")
@@ -42,7 +56,15 @@ d3.json("data/mindmap.json", function(e, graph) {
     .selectAll("circle")
     .data(nodes).enter()
     .append("circle")
-    .attr("r", 5);
+    .attr("r", 5)
+    .on("click", start_hover)
+    .on("mouseover", start_hover);
+  const svg_text = svg.append("text")
+    .text("")
+    .attr("x", "50%")
+    .attr("y", "1em")
+    .attr("text-anchor", "middle")
+    .attr("dy", "1em");
   svg_nodes.append("title").text(node => node.title);
   svg_nodes.call(d3.drag()
     .on("start", dragstarted)
