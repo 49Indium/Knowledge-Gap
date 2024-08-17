@@ -147,7 +147,7 @@ flashcards_db = chroma_client.get_or_create_collection(name="flashcards", embedd
 
 mindmap = nx.Graph()
 
-flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=500)
+flashcard_sample = flashcards_db.get(include=["embeddings","metadatas"], limit=200)
 assert flashcard_sample["metadatas"]
 assert flashcard_sample["embeddings"]
 for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):

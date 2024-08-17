@@ -22,6 +22,11 @@ d3.json("data/mindmap.json", function(e, graph) {
     node.fx = null;
     node.fy = null;
   }
+  function pan() {
+    console.log(d3.event)
+    svg_edges.attr("transform", d3.event.transform);
+    svg_nodes.attr("transform", d3.event.transform);
+  }
   
   const svg_edges = svg.append("g")
     .attr("stroke", "#999")
@@ -43,14 +48,15 @@ d3.json("data/mindmap.json", function(e, graph) {
     .on("start", dragstarted)
     .on("drag", dragged)
     .on("end", dragended));
+  svg.call(d3.zoom().on("zoom", pan))
 
   ticked = function () {
     svg_edges.attr("x1", edge => edge.source.x)
       .attr("y1", edge => edge.source.y)
       .attr("x2", edge => edge.target.x)
-      .attr("y2", edge => edge.target.y)
+      .attr("y2", edge => edge.target.y);
     svg_nodes.attr("cx", node => node.x)
-      .attr("cy", node => node.y)
+      .attr("cy", node => node.y);
   }
 
   const simulation = d3.forceSimulation(nodes)
@@ -60,7 +66,5 @@ d3.json("data/mindmap.json", function(e, graph) {
     .force("centerX", d3.forceX(width / 2).strength(0.05))
     .force("centerY", d3.forceY(height / 2).strength(0.05))
     .on("tick", ticked);
-
-  // return svg.node();
 })
 
