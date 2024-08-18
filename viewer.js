@@ -197,9 +197,6 @@ d3.json("data/mindmap.json", function(e, graph) {
         return;
       
       let node_data = dragged.datum();
-      console.log(d3.event);
-
-      console.log("dragging");
 
       node_data.fx = event.x;
       node_data.fy = event.y;
@@ -236,7 +233,6 @@ d3.json("data/mindmap.json", function(e, graph) {
   });
 
   function setFocus(node, hold) {
-    console.log(node)
     if (hold_focus) {
       return;
     }
@@ -247,7 +243,6 @@ d3.json("data/mindmap.json", function(e, graph) {
       hold_focus = false;
     } else {
       focus = v_dom_nodes.filter(d => d.id == node.id);
-      // console.log(focus);
       hold_focus = hold;
       focus.attr("r", 2 * get_slider_prop("radius"));
     }
@@ -287,37 +282,44 @@ d3.json("data/mindmap.json", function(e, graph) {
         node_edge_map.delete(selected_id + " " + other_id);
         node_edge_map.delete(other_id + " " + selected_id);
 
-        d3.select("#edge-" + edge.index).remove();
+        console.log(v_dom_edges.filter("#edge-" + edge.index).data().length);
+        v_dom_edges.filter("#edge-" + edge.index).remove();
 
         const index = edges.indexOf(edge);
         edges.splice(index, 1);
+
+        updateData(nodes, edges);
 
         // d3.select()
       } else {
         // add edge
 
-        // console.log(JSON.stringify(edges[0], null, 4));
-
         // proved more annoying than expected, moving on for now
-        
-        // let edge = {
-        //   label: "0.5",
-        //   source: selected_id,
-        //   target: other_id,
-        //   weight: 5.0
-        // };
-        
-        // edges.push(edge);
+        let asdf = v_dom_nodes.filter(node => node.id == selected_id).datum();
+        let asdfasdf = v_dom_nodes.filter(node => node.id == other_id).datum();
 
-        // node_edge_map.set(selected_id + " " + other_id, edge);
-        // node_edge_map.set(other_id + " " + selected_id, edge);
+        console.log(asdf);
+        console.log(asdfasdf);
+        
+        let edge = {
+          label: "0.5",
+          source: v_dom_nodes.filter(node => node.id == selected_id).datum(),
+          target: v_dom_nodes.filter(node => node.id == other_id).datum(),
+          weight: 5.0
+        };
+
+        
+        edges.push(edge);
+
+        node_edge_map.set(selected_id + " " + other_id, edge);
+        node_edge_map.set(other_id + " " + selected_id, edge);
+
+        updateData(nodes, edges);
       }
 
       selected.attr("stroke", "$fff");
       selected = null;
     } else {
-      // console.log(node);
-      
       selected = node;
       selected.attr("stroke", "#000")
         .attr("stroke-width", 1.5)
@@ -333,32 +335,39 @@ d3.json("data/mindmap.json", function(e, graph) {
   const v_dom_base = document.createElement("v_dom");
   const v_dom = d3.select(v_dom_base);
   
-  const v_dom_edges = v_dom.append("g")
-    .attr("class", "edges")
-    .selectAll("line")
-    .data(edges).enter()
-    .append("line")
-    .attr("stroke", "#999")
-    .attr("stroke-opacity", 0.6);
-  const v_dom_nodes = v_dom.append("g")
-    .attr("class", "nodes")
-    .selectAll("circle")
-    .data(nodes).enter()
-    .append("circle")
-    .attr("stroke", "#fff")
-    .attr("stroke-width", 1.5)
-    .attr("r", 5)
-    .attr("class", node => "group-" + node.group)
-    .attr("fill", node => color(node.group))
-    .attr("fill-hidden", node => {
-      if (!node.hidden_colour) {
-        let c = uniqueColour();
-        node.hidden_colour = c;
-        colour_to_node[c] = node;
-      }
+  let v_dom_edges;
+  let v_dom_nodes;
 
-      return node.hidden_colour;      
-    });
+  function updateData(nodes, edges) {
+    v_dom_edges = v_dom.append("g")
+      .attr("class", "edges")
+      .selectAll("line")
+      .data(edges).enter()
+      .append("line")
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.6);
+    v_dom_nodes = v_dom.append("g")
+      .attr("class", "nodes")
+      .selectAll("circle")
+      .data(nodes).enter()
+      .append("circle")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1.5)
+      .attr("r", 5)
+      .attr("class", node => "group-" + node.group)
+      .attr("fill", node => color(node.group))
+      .attr("fill-hidden", node => {
+        if (!node.hidden_colour) {
+          let c = uniqueColour();
+          node.hidden_colour = c;
+          colour_to_node[c] = node;
+        }
+
+        return node.hidden_colour;      
+      });
+  }
+
+  updateData(nodes, edges);
 
   const svg_group_text = svg.append("g")
     .attr("text-anchor", "middle")
