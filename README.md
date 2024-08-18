@@ -1,6 +1,8 @@
 # Knowledge Gap
 Classify your notes automatically, find new connections between existing ideas and see a mind-map of everything you've learnt. A project for the 2024 UQCS Hackathon.
 
+![image](https://github.com/user-attachments/assets/92db9056-fd03-47ed-b6a5-a3632e0ead2d)
+
 ## Why Care?
 Writing notes is a key part of the uni experience. However, if you're anything like me, they end up an unorganised mess of tid-bits and dot points where you can't find the thing you're looking for. You want to be writing notes, not organising them and taking up precious learning (or partying) time!
 
