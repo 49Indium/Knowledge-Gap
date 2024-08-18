@@ -180,6 +180,7 @@ d3.json("data/mindmap.json", function(e, graph) {
     return colour_to_node[col_key];
   }
 
+  // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
   svg.call(d3.drag()
     .on("start", () => {
       let node_data = nodeFromEvent(d3.event);
@@ -210,6 +211,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       let dragged_data = dragged.datum();
       dragged_data.fx = null;
       dragged_data.fy = null;
+      hold_focus = false;
       setFocus(dragged_data, false);
 
       dragged = null;
@@ -232,20 +234,6 @@ d3.json("data/mindmap.json", function(e, graph) {
     
     clickNode(clicked);
   });
-
-  // svg.on("mouseup", () => {
-  //   if (mouse_held_ticks < 4 && clicked) {
-  //     // Select
-  //   }
-
-  //   if (dragging) {
-  //   }
-
-  //   clicked = null;
-  //   dragging = false;
-  //   mouse_held_ticks = 0;
-  //   clearInterval(mouse_hold_int);
-  // });
 
   function setFocus(node, hold) {
     console.log(node)
@@ -280,27 +268,6 @@ d3.json("data/mindmap.json", function(e, graph) {
     next_col += 10;
     return "rgb(" + ret.join(',') + ")";
   }
-
-  // // Based upon https://observablehq.com/@d3/force-directed-graph/2?intent=fork
-  // function dragstarted(node) {
-  //   if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-  //   node.fx = node.x;
-  //   node.fy = node.y;
-
-  //   setFocus(this, true);
-  // }
-  // function dragged(node) {
-  //   node.fx = d3.event.x;
-  //   node.fy = d3.event.y;
-  // }
-  // function dragended(node) {
-  //   // no longer want to stop simulation since we are orbitting
-  //   // if (!d3.event.active) simulation.alphaTarget(0);
-  //   node.fx = null;
-  //   node.fy = null;
-
-  //   setFocus(this, false);
-  // }
 
   function clickNode(node) {
     if (selected) {
