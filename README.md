@@ -1,7 +1,7 @@
 # Knowledge Gap
 Classify your notes automatically, find new connections between existing ideas and see a mind-map of everything you've learnt. A project for the 2024 UQCS Hackathon.
 
-![image](https://github.com/user-attachments/assets/92db9056-fd03-47ed-b6a5-a3632e0ead2d)
+https://github.com/user-attachments/assets/733ffe8f-9c3d-4c8a-8b95-948ad8617503
 
 ## Why Care?
 Writing notes is a key part of the uni experience. However, if you're anything like me, they end up an unorganised mess of tid-bits and dot points where you can't find the thing you're looking for. You want to be writing notes, not organising them and taking up precious learning (or partying) time!
@@ -26,6 +26,8 @@ $$Q=\frac{1}{2\sum_{ij}w(e_{ij})}\sum_{ij}\left(w(e_{ij})-\frac{\left(\sum_kw(e_
 To name the clusters, we try to find a word that matches the average embedding of each node in the cluster. We try every word within the database and find the word that matches up best.
 
 All of this information is bundled together in a json file and passed to the front end.
+
+![image](https://github.com/user-attachments/assets/92db9056-fd03-47ed-b6a5-a3632e0ead2d)
 
 ### The Front
 The visualisation of the graph is based on a many-body simulation. We spread out the nodes and apply forces to try to coerce the graph into a nice shape. The main force grouping the graph to how we might expect is the lining force of the edges. Embeddings of notes that we're closer (i.e. considered more similar) have shorter edges that pull together with more strength. This automatically clusters the data.
