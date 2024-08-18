@@ -184,6 +184,7 @@ d3.json("data/mindmap.json", function(e, graph) {
   });
 
   function setFocus(node, hold) {
+    console.log(node)
     if (hold_focus) {
       return;
     }
@@ -198,7 +199,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       hold_focus = hold;
       focus.attr("r", 2 * get_slider_prop("radius"));
     }
-    svg_select_text.text(node.textContent);
+    svg_select_text.text(node.title);
   }
 
   function uniqueColour() {
@@ -336,16 +337,6 @@ d3.json("data/mindmap.json", function(e, graph) {
     })
     .on("click", clickNode)
     .on("mouseover", startHover);
-  const svg_select_text = svg.append("text")
-    .text("")
-    .attr("x", "50%")
-    .attr("y", "1em")
-    .attr("text-anchor", "middle")
-    .attr("dy", "1em")
-    .attr("stroke", "white")
-    .attr("stroke-width", "4")
-    .attr("fill", "black")
-    .attr("paint-order", "stroke");
   const svg_group_text = svg.append("g")
     .attr("text-anchor", "middle")
     .attr("dy", "1em")
@@ -359,6 +350,17 @@ d3.json("data/mindmap.json", function(e, graph) {
     .attr("id", group => "group-title-" + group.index)
     .text(group => group.title)
     .attr("dy", "1em");
+  const svg_select_text = svg.append("text")
+    .text("")
+    .attr("x", "50%")
+    .attr("y", "1em")
+    .attr("text-anchor", "middle")
+    .attr("dy", "1em")
+    .attr("font-size", "2em")
+    .attr("stroke", "white")
+    .attr("stroke-width", "7")
+    .attr("fill", "black")
+    .attr("paint-order", "stroke");
 
   // compute the node_edge map so that we can add/remove edges
   // efficiently.
