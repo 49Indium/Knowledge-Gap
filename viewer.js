@@ -225,7 +225,7 @@ d3.json("data/mindmap.json", function(e, graph) {
 
   svg.on("click", () => {
     node_data = nodeFromEvent(d3.event);
-    if (!node_data && !clicked)
+    if (!node_data)
       return;
 
     let clicked = v_dom_nodes.filter(d => d.id == node_data.id);
