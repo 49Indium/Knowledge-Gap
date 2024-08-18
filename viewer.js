@@ -168,55 +168,84 @@ d3.json("data/mindmap.json", function(e, graph) {
   let hold_focus = false;
   let focus = null;
   let selected = null;
-  let clicked = null;
+  let dragged = null;
 
   function nodeFromEvent(event) {
     let pixel_ratio = window.devicePixelRatio;
-    let mouse_x = event.offsetX * pixel_ratio;
-    let mouse_y = event.offsetY * pixel_ratio;
+    let mouse_x = (event.offsetX || event.x) * pixel_ratio;
+    let mouse_y = (event.offsetY || event.y) * pixel_ratio;
 
     let col = ctx_hidden.getImageData(mouse_x, mouse_y, 1, 1).data;
     let col_key = 'rgb(' + col[0] + ',' + col[1] + ',' + col[2] + ')';
     return colour_to_node[col_key];
   }
 
+  svg.call(d3.drag()
+    .on("start", () => {
+      let node_data = nodeFromEvent(d3.event);
+      if (!node_data)
+        return;
+      dragged = v_dom_nodes.filter(d => d.id == node_data.id);
+      
+      node_data.fx = node_data.x;
+      node_data.fy = node_data.y;
+      setFocus(node_data, true);
+    })
+    .on("drag", () => {
+      if (!dragged)
+        return;
+      
+      let node_data = dragged.datum();
+      console.log(d3.event);
+
+      console.log("dragging");
+
+      node_data.fx = event.x;
+      node_data.fy = event.y;
+    })
+    .on("end", () => {
+      if (!dragged)
+        return;
+      
+      let dragged_data = dragged.datum();
+      dragged_data.fx = null;
+      dragged_data.fy = null;
+      setFocus(dragged_data, false);
+
+      dragged = null;
+    }));
+
   svg.on("mousemove", () => {
-    node_data = nodeFromEvent(d3.event);
+    let node_data = nodeFromEvent(d3.event);
     if (!node_data)
       return;
-      
+
     setFocus(node_data, false);
   });
 
-  let mouse_held_ticks = 0;
-  let mouse_hold_int = null;
-  
-  svg.on("mousedown", () => {
+  svg.on("click", () => {
     node_data = nodeFromEvent(d3.event);
     if (!node_data && !clicked)
       return;
 
-    if (!clicked) {
-      clicked = v_dom_nodes.filter(d => d.id == node_data.id);
-    }
-
-    clearInterval(mouse_hold_int);
-    // val = 0;
-    mouse_hold_int = setInterval(() => {
-      console.log(++mouse_held_ticks);
-    }, 50);
+    let clicked = v_dom_nodes.filter(d => d.id == node_data.id);
+    
+    clickNode(clicked);
   });
 
-  svg.on("mouseup", () => {
-    if (mouse_held_ticks < 4 && clicked) {
-      // Select
-      clickNode(clicked);
-    }
+  // svg.on("mouseup", () => {
+  //   if (mouse_held_ticks < 4 && clicked) {
+  //     // Select
+  //   }
 
-    clicked = null;
-    mouse_held_ticks = 0;
-    clearInterval(mouse_hold_int);
-  });
+  //   if (dragging) {
+  //   }
+
+  //   clicked = null;
+  //   dragging = false;
+  //   mouse_held_ticks = 0;
+  //   clearInterval(mouse_hold_int);
+  // });
 
   function setFocus(node, hold) {
     console.log(node)
@@ -272,14 +301,6 @@ d3.json("data/mindmap.json", function(e, graph) {
 
   //   setFocus(this, false);
   // }
-  function pan() {
-    scale = d3.event.transform.k;
-    v_dom_edges.attr("transform", d3.event.transform);
-    v_dom_nodes.attr("transform", d3.event.transform);
-  }
-  function startHover(node) {
-    setFocus(d3.event.target, false);
-  }
 
   function clickNode(node) {
     if (selected) {
