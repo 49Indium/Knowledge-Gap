@@ -188,12 +188,13 @@ for id, note in zip(flashcard_sample["ids"], flashcard_sample["metadatas"]):
 mindmap.add_edges_from(create_edges(flashcard_sample["ids"], flashcard_sample["embeddings"], "Nearest Neighbours", db=flashcards_db))
 reduce_edges(mindmap)
 
-partition = nx.community.louvain_communities(mindmap)
+partition = list(nx.community.louvain_communities(mindmap))
+partition.sort(key=len, reverse=True)
 
 export_dict = {
     "nodes": [{"id": id, "title": node_data["title"], "group": [i for i, g in enumerate(partition) if id in g][0]} for id, node_data in mindmap.nodes(True)],
     "edges": [{"source": u, "target": v, "label": edge_data["label"], "weight": edge_data["weight"]} for u, v, edge_data in mindmap.edges(None, True)],
-    "groups": [{"title": get_closest_term(get_all_terms(p), average_vector(p)) if len(p) > 4 else "", "index": i} for i, p in enumerate(partition)]
+    "groups": [{"title": get_closest_term(get_all_terms(p), average_vector(p)) if len(p) >= 4 else "", "index": i} for i, p in enumerate(partition)]
 }
 with open("data/mindmap.json", "w") as json_file:
     json.dump(export_dict, json_file, indent="\t", sort_keys=True)

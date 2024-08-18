@@ -23,6 +23,7 @@ d3.json("data/mindmap.json", function(e, graph) {
   let forceConnection = 1.2;
   let distanceConnection = 10;
   let spiralForceDefault = 0.001;
+  let dampeningDefault = 0.1;
 
   let input_sliders = [
     {
@@ -91,10 +92,18 @@ d3.json("data/mindmap.json", function(e, graph) {
     {
       id: "force-spiral",
       label: "Spiral Force",
-      min: -0.03,
-      max: 0.03,
+      min: -0.01,
+      max: 0.01,
       default: spiralForceDefault,
       onUpdate: f => simulation.force("spiral", spiralForce(width/2, height/2, f))
+    },
+    {
+      id: "dampening",
+      label: "Dampening",
+      min: 0.01,
+      max: 1,
+      default: dampeningDefault,
+      onUpdate: f => simulation.velocityDecay(f)
     }
   ]
 
@@ -239,7 +248,7 @@ d3.json("data/mindmap.json", function(e, graph) {
   }
 
   const simulation = d3.forceSimulation(nodes)
-    .velocityDecay(0.1) 
+    .velocityDecay(dampeningDefault) 
     .force("connection", d3.forceLink(edges).id(node => node.id).distance(edge => 1 + 10/edge.weight).strength(edge => 1.2/edge.weight))
     .force("repel", d3.forceManyBody().strength(-20))
     .force("centerX", d3.forceX(width / 2).strength(0.05))
