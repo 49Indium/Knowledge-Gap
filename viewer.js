@@ -29,11 +29,6 @@ d3.select("#toggle-visible").on("click", event => {
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;
 
-  let forceConnection = 1.2;
-  let distanceConnection = 10;
-  let spiralForceDefault = 0.001;
-  let dampeningDefault = 0.1;
-
   let input_sliders = [
     {
       id: "radius",
@@ -69,16 +64,11 @@ d3.json("data/mindmap.json", function(e, graph) {
       label: "Connection Force",
       min: 0.5,
       max: 2,
-      default: forceConnection,
+      default: 1.2,
       onUpdate: f => {
-        forceConnection = f;
-        
-        simulation
-          .force("connection", d3.forceLink(edges)
-          .id(node => node.id)
-          .distance(edge => 1 + distanceConnection/edge.weight)
-          .strength(edge => f/edge.weight))
-          .alphaTarget(0.3).restart();
+        edge_force.strength(edge => f/edge.weight);
+
+        simulation.alphaTarget(0.3).restart();
       }
     },
     {
@@ -86,16 +76,11 @@ d3.json("data/mindmap.json", function(e, graph) {
       label: "Connection Distance",
       min: 0.5,
       max: 40,
-      default: distanceConnection,
+      default: 10,
       onUpdate: d => {
-        distanceConnection = d;
+        edge_force.distance(edge => 1 + d/edge.weight);
 
-        simulation
-          .force("connection", d3.forceLink(edges)
-          .id(node => node.id)
-          .distance(edge => 1 + d/edge.weight)
-          .strength(edge => forceConnection/edge.weight))
-          .alphaTarget(0.3).restart();
+        simulation.alphaTarget(0.3).restart();
       }
     },
     {
@@ -103,7 +88,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       label: "Spiral Force",
       min: -0.01,
       max: 0.01,
-      default: spiralForceDefault,
+      default: 0.001,
       onUpdate: f => simulation
         .force("spiral", spiralForce(width/2, height/2, f))
         .alphaTarget(0.3).restart()
@@ -113,7 +98,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       label: "Dampening",
       min: 0.01,
       max: 1,
-      default: dampeningDefault,
+      default: 0.1,
       onUpdate: f => simulation.velocityDecay(f)
     }
   ]
@@ -282,39 +267,32 @@ d3.json("data/mindmap.json", function(e, graph) {
         node_edge_map.delete(selected_id + " " + other_id);
         node_edge_map.delete(other_id + " " + selected_id);
 
-        console.log(v_dom_edges.filter("#edge-" + edge.index).data().length);
         v_dom_edges.filter("#edge-" + edge.index).remove();
 
         const index = edges.indexOf(edge);
         edges.splice(index, 1);
 
-        updateData(nodes, edges);
+        updateVDomData(nodes, edges);
+        updateSimulationData(nodes, edges);
 
         // d3.select()
       } else {
         // add edge
 
-        // proved more annoying than expected, moving on for now
-        let asdf = v_dom_nodes.filter(node => node.id == selected_id).datum();
-        let asdfasdf = v_dom_nodes.filter(node => node.id == other_id).datum();
-
-        console.log(asdf);
-        console.log(asdfasdf);
-        
         let edge = {
           label: "0.5",
-          source: v_dom_nodes.filter(node => node.id == selected_id).datum(),
-          target: v_dom_nodes.filter(node => node.id == other_id).datum(),
+          source: selected_id,
+          target: other_id,
           weight: 5.0
         };
 
-        
         edges.push(edge);
 
         node_edge_map.set(selected_id + " " + other_id, edge);
         node_edge_map.set(other_id + " " + selected_id, edge);
 
-        updateData(nodes, edges);
+        updateVDomData(nodes, edges);
+        updateSimulationData(nodes, edges);
       }
 
       selected.attr("stroke", "$fff");
@@ -338,7 +316,7 @@ d3.json("data/mindmap.json", function(e, graph) {
   let v_dom_edges;
   let v_dom_nodes;
 
-  function updateData(nodes, edges) {
+  function updateVDomData(nodes, edges) {
     v_dom_edges = v_dom.append("g")
       .attr("class", "edges")
       .selectAll("line")
@@ -367,7 +345,7 @@ d3.json("data/mindmap.json", function(e, graph) {
       });
   }
 
-  updateData(nodes, edges);
+  updateVDomData(nodes, edges);
 
   const svg_group_text = svg.append("g")
     .attr("text-anchor", "middle")
@@ -471,15 +449,20 @@ d3.json("data/mindmap.json", function(e, graph) {
     }
   }
 
+  const edge_force = d3.forceLink(edges)
+    .id(node => node.id)
+    .distance(edge => 1 + 10/edge.weight)
+    .strength(edge => 1.2/edge.weight);
+
+  // other forces created by sliders
   const simulation = d3.forceSimulation(nodes)
-    .velocityDecay(dampeningDefault) 
-    .force("connection", d3.forceLink(edges).id(node => node.id).distance(edge => 1 + 10/edge.weight).strength(edge => 1.2/edge.weight))
-    .force("repel", d3.forceManyBody().strength(-20))
-    .force("centerX", d3.forceX(width / 2).strength(0.05))
-    .force("centerY", d3.forceY(height / 2).strength(0.05))
-    .force("spiral", spiralForce(width/2, height/2, spiralForceDefault))
+    .force("connection", edge_force)
     .on("tick", ticked);
 
+  function updateSimulationData(nodes, edges) {
+    simulation.nodes(nodes);
+    edge_force.links(edges);
+  }
   
   input_sliders.forEach((slider, i) => updateSlider(slider, slider.default));
 })
