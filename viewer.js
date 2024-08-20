@@ -185,8 +185,8 @@ d3.json("data/mindmap.json", function(e, graph) {
       
       let node_data = dragged.datum();
 
-      node_data.fx = event.x;
-      node_data.fy = event.y;
+      node_data.fx = (event.x - offset_x) / scale;
+      node_data.fy = (event.y - offset_y) / scale;
     })
     .on("end", () => {
       if (!dragged)
@@ -419,7 +419,12 @@ d3.json("data/mindmap.json", function(e, graph) {
       pixel_ratio * offset_x,
       pixel_ratio * offset_y
     );
-    
+
+    let min_x = -offset_x / scale;
+    let max_x = -offset_x / scale + width / scale;
+    let min_y = -offset_y / scale;
+    let max_y = -offset_y / scale + height / scale;
+
     // Clear the canvas
     ctx.clearRect(0, 0, width, height);
 
@@ -428,6 +433,15 @@ d3.json("data/mindmap.json", function(e, graph) {
       // Draw each edge
       v_dom_edges.each((edge_data, i, v_edges) => {
         let edge = d3.select(v_edges[i]);
+
+        let sx = edge_data.source.x;
+        let sy = edge_data.source.y;
+        let tx = edge_data.target.x;
+        let ty = edge_data.target.y;
+
+        if (sx < min_x && tx < min_x || sx > max_x && tx > max_x ||
+            sy < min_y && ty < min_y || sy > max_y && ty > max_y)
+          return;
       
         ctx.strokeStyle = edge.attr("stroke");
         ctx.lineWidth = edge.attr("stroke-width");
@@ -442,12 +456,26 @@ d3.json("data/mindmap.json", function(e, graph) {
     v_dom_nodes.each((node_data, i, v_nodes) => {
       let node = d3.select(v_nodes[i]);
 
+      let r = node.attr("r");
+      let sw = node.attr("stroke-width");
+      let fr = r;
+
+      let nx = node_data.x;
+      let ny = node_data.y;
+
+      // if (nx > min_x && nx < min_x + 20)
+      //   console.log(nx + " " + fr + " " + min_x);
+
+      if (nx + 2*fr < min_x || nx - 2*fr > max_x ||
+          ny + 2*fr < min_y || ny - 2*fr > max_y)
+        return;
+
       ctx.strokeStyle = hidden ? node.attr("fill-hidden") : node.attr("stroke");
-      ctx.lineWidth = node.attr("stroke-width");
+      ctx.lineWidth = sw;
       ctx.fillStyle = hidden ? node.attr("fill-hidden") : node.attr("fill");
 
       ctx.beginPath();
-      ctx.arc(node_data.x, node_data.y, node.attr("r"), 0, 2 * Math.PI, false);
+      ctx.arc(nx, ny, r, 0, 2 * Math.PI, false);
       ctx.fill();
       ctx.stroke();
     });
