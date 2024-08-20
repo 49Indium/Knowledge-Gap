@@ -219,17 +219,26 @@ d3.json("data/mindmap.json", function(e, graph) {
     clickNode(clicked);
   });
 
-  svg.call(d3.zoom().on("zoom", () => {
-    let event = d3.event.sourceEvent;
+  svg.call(
+    d3.zoom().on("zoom", () => {
+      let event = d3.event.sourceEvent;
 
-    if (!event)
-      return;
+      if (!event)
+        return;
 
-    let scale_old = scale;
-    scale *= 1 + event.wheelDelta / 180.0 / 8.0;
-    offset_x += (event.clientX - offset_x) * (scale_old - scale) / scale_old;
-    offset_y += (event.clientY - offset_y) * (scale_old - scale) / scale_old;
-  }));
+      if (event.movementX) {
+        offset_x += event.movementX;
+        offset_y += event.movementY;
+      }
+
+      if (event.wheelDelta) {
+        let scale_old = scale;
+        scale *= 1 + event.wheelDelta / 180.0 / 8.0;
+        offset_x += (event.clientX - offset_x) * (scale_old - scale) / scale_old;
+        offset_y += (event.clientY - offset_y) * (scale_old - scale) / scale_old;
+      }
+    }).filter(() => event.button == 1 || event.type === "wheel")
+  );
 
   function setFocus(node, hold) {
     if (hold_focus) {
