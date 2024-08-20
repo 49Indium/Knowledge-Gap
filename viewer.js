@@ -149,6 +149,8 @@ d3.json("data/mindmap.json", function(e, graph) {
   let colour_to_node = {}; // map each unique colour to the associated node.
   
   let scale = 1;
+  let offset_x = 0;
+  let offset_y = 0;
 
   let hold_focus = false;
   let focus = null;
@@ -216,6 +218,18 @@ d3.json("data/mindmap.json", function(e, graph) {
     
     clickNode(clicked);
   });
+
+  svg.call(d3.zoom().on("zoom", () => {
+    let event = d3.event.sourceEvent;
+
+    if (!event)
+      return;
+
+    let scale_old = scale;
+    scale *= 1 + event.wheelDelta / 180.0 / 8.0;
+    offset_x += (event.clientX - offset_x) * (scale_old - scale) / scale_old;
+    offset_y += (event.clientY - offset_y) * (scale_old - scale) / scale_old;
+  }));
 
   function setFocus(node, hold) {
     if (hold_focus) {
@@ -389,7 +403,13 @@ d3.json("data/mindmap.json", function(e, graph) {
 
     canvas.attr("width", width * pixel_ratio);
     canvas.attr("height", height * pixel_ratio);
-    ctx.setTransform(pixel_ratio, 0, 0, pixel_ratio, 0, 0);
+    ctx.setTransform(
+      pixel_ratio * scale,
+      0, 0,
+      pixel_ratio * scale,
+      pixel_ratio * offset_x,
+      pixel_ratio * offset_y
+    );
     
     // Clear the canvas
     ctx.clearRect(0, 0, width, height);
@@ -444,8 +464,8 @@ d3.json("data/mindmap.json", function(e, graph) {
       }
 
       d3.selectAll("#group-title-" + group.index)
-        .attr("x", sum_x / n)
-        .attr("y", sum_y / n)
+        .attr("x", scale * sum_x / n + offset_x)
+        .attr("y", scale * sum_y / n + offset_y);
     }
   }
 
