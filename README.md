@@ -1,5 +1,5 @@
 # Knowledge Gap
-Classify your notes automatically, find new connections between existing ideas and see a mind-map of everything you've learnt. A project for the 2024 UQCS Hackathon.
+Classify your notes automatically, find new connections between existing ideas and see a mind-map of everything you've learnt. A project for the 2024 UQCS Hackathon. See [here](https://www.isaacbeh.net/projects/knowledge-gap/viewer.html) for a live demo.
 
 https://github.com/user-attachments/assets/733ffe8f-9c3d-4c8a-8b95-948ad8617503
 
