@@ -1,5 +1,3 @@
-let toggle_hidden = false;
-
 function spiralForce(x, y, strength) {
   var nodes;
   function force() {
@@ -14,17 +12,19 @@ function spiralForce(x, y, strength) {
   return force;
 }
 
-d3.select("#toggle-visible").on("click", event => {
-  toggle_hidden = !toggle_hidden;
-
-  if (toggle_hidden) {
-    d3.select("#inputs-container")
-      .attr("class", "hidden");
-  } else {
-    d3.select("#inputs-container")
-      .attr("class", null);
+const visibility_elements = document.getElementsByClassName("toggle-visible");
+for (const element of visibility_elements) {
+  console.log(element);
+  element.onclick = function (event) {
+    console.log("hi");
+    if (element.classList.contains("hidden")) {
+      element.classList.remove("hidden");
+    } else {
+      element.classList.add("hidden");
+    }
+    event.stopPropagation();
   }
-});
+}
 
 d3.json("data/mindmap.json", function(e, graph) {
   if (e) throw e;

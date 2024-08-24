@@ -8,12 +8,27 @@
         <canvas id="canvas-hidden"></canvas>
         <svg></svg>
 
+        <div id="help-menu" onclick="document.querySelector('#help-menu > .toggle-visible').classList.add('hidden');">
+            <span class="toggle-visible hidden">?</span>
+            <div>
+                <h1> Welcome to Knowledge Gap!</h1>
+                <p>Kowledge Gap is a tool to classify your notes automatically, find new connections between existing ideas and see a mind-map of everything you've learnt. It was made as part of the 2024 UQCS Hackathon, and what you're seeing is a live demo with Isaac Beh's notes. You can find more about Knowledge Gap <a href="https://github.com/49Indium/Knowledge-Gap">here</a>.<p>
+                <p>Some things to try:</p>
+                <ul>
+                    <li>Hover over nodes to see the concepts they represent</li>
+                    <li>See automatically generated connections between concepts via the edges of the graph</li>
+                    <li>Move nodes around by dragging</li>
+                    <li>Move the graph around by dragging with the middle mouse button</li>
+                    <li>Create new edges or delete exising ones by clicking between nodes</li>
+                    <li>Change the forces (bottom left) and see how the graph responds</li>
+                </ul>
+            </div>
+        </div>
+
         <div id="inputs-container">
-            <div id="toggle-visible-container">
-                <div id="toggle-visible">
-                    <div class="hline-bottom"></div>
-                    <div class="hline-bottom"></div>
-                </div>
+            <div class="toggle-visible">
+                <div class="hline-bottom"></div>
+                <div class="hline-bottom"></div>
             </div>
             
             <div id="input-sliders">
